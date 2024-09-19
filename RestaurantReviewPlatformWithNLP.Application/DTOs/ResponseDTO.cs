@@ -7,7 +7,7 @@
         public T? Data { get; set; }
 
         // Constructor for success response
-        public ResponseDTO(T data, string message = "Operation successful!")
+        public ResponseDTO(T? data, string message = "Operation successful!")
         {
             Success = true;
             Message = message;

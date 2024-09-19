@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using RestaurantReviewPlatformWithNLP.Application.Common.Models;
 using RestaurantReviewPlatformWithNLP.Application.Common.Utility;
+using RestaurantReviewPlatformWithNLP.Application.DTOs;
 using RestaurantReviewPlatformWithNLP.Application.Services;
 using RestaurantReviewPlatformWithNLP.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
@@ -11,24 +12,17 @@ using System.Text;
 
 namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 {
-    public class AuthService : IAuthService
+    public class AuthService(UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        IConfiguration config) : IAuthService
     {
         // inject Identity Managers
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly IConfiguration _config;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
+        private readonly IConfiguration _config = config;
         private const int _expirationTokenHours = 12;
 
-        public AuthService(UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            IConfiguration config)
-        {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _config = config;
-        }
-
-        public async Task<string> GenerateJwtToken(ApplicationUser user, IEnumerable<string> roles)
+        public async Task<ResponseDTO<string>> GenerateJwtToken(ApplicationUser user, IEnumerable<string> roles)
         {
             try
             {
@@ -41,9 +35,9 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 
                 var claimList = new List<Claim>
                 {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                    new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                    new Claim(JwtRegisteredClaimNames.Name, user.FullName)
+                    new(JwtRegisteredClaimNames.Sub, user.Id),
+                    new(JwtRegisteredClaimNames.Email, user.Email),
+                    new(JwtRegisteredClaimNames.Name, user.FullName)
                 };
 
                 // adding roles to claim List
@@ -63,15 +57,17 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                 };
 
                 var token = tokenHandler.CreateToken(tokenDescriptor);
-                return tokenHandler.WriteToken(token);
+                var tokenString = tokenHandler.WriteToken(token);
+
+                return new ResponseDTO<string>(tokenString, "Token generated successfully!");
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                return new ResponseDTO<string>(ex.Message);
             }
         }
 
-        public async Task<string> LoginAsync(LoginModel loginModel)
+        public async Task<ResponseDTO<string>> LoginAsync(LoginModel loginModel)
         {
             try
             {
@@ -79,7 +75,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                     loginModel.Password, false, false);
 
                 if (!result.Succeeded)
-                    throw new Exception("Email/Password is incorrect!");
+                    return new ResponseDTO<string>("Email/Password is incorrect!");
 
                 // getting this user and user roles
                 var userFromDb = await _userManager.FindByEmailAsync(loginModel.Email)
@@ -87,16 +83,18 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 
                 var userRoles = await _userManager.GetRolesAsync(userFromDb);
 
-                // create token
-                return await GenerateJwtToken(userFromDb, userRoles);
+                // create and return token
+                var generatedToken = await GenerateJwtToken(userFromDb, userRoles);
+
+                return new ResponseDTO<string>(generatedToken.Data, "Login successfully!");
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                return new ResponseDTO<string>(ex.Message);
             }
         }
 
-        public async Task RegisterAsync(RegisterModel registerModel)
+        public async Task<ResponseDTO<string>> RegisterAsync(RegisterModel registerModel)
         {
             try
             {
@@ -113,10 +111,12 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 
                 // assign role
                 await _userManager.AddToRoleAsync(user, SD.Role_User);
+
+                return new ResponseDTO<string>(null, "Registration successful!");
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                return new ResponseDTO<string>(ex.Message);
             }
         }
     }

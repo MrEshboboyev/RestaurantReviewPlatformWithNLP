@@ -17,14 +17,12 @@ namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            try
-            {
-                return Ok(await _authService.LoginAsync(loginModel));
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
+            var response = await _authService.LoginAsync(loginModel);
+
+            if (!response.Success)
+                return BadRequest(response);
+
+            return Ok(response);
         }
 
         [HttpPost("register")]
@@ -33,15 +31,12 @@ namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            try
-            {
-                await _authService.RegisterAsync(registerModel);
-                return Ok("Registration successful!");
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
+            var response = await _authService.RegisterAsync(registerModel);
+
+            if (!response.Success)
+                return BadRequest(response);
+
+            return Ok(response);
         }
     }
 }
