@@ -3,7 +3,37 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35309.182
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestaurantReviewPlatformWithNLP.Domain", "RestaurantReviewPlatformWithNLP.Domain\RestaurantReviewPlatformWithNLP.Domain.csproj", "{1A1001E9-DC9A-4B2D-B8A0-2F2125D4841D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestaurantReviewPlatformWithNLP.Application", "RestaurantReviewPlatformWithNLP.Application\RestaurantReviewPlatformWithNLP.Application.csproj", "{E9EAF4A2-63E1-427D-9037-21827C49F810}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestaurantReviewPlatformWithNLP.Infrastructure", "RestaurantReviewPlatformWithNLP.Infrastructure\RestaurantReviewPlatformWithNLP.Infrastructure.csproj", "{2B8F17F0-C11B-457C-98C5-3C69E3F218FE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestaurantReviewPlatformWithNLP.Presentation", "RestaurantReviewPlatformWithNLP.Presentation\RestaurantReviewPlatformWithNLP.Presentation.csproj", "{68800C8A-4C22-46FE-880E-719541E04AEC}"
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1A1001E9-DC9A-4B2D-B8A0-2F2125D4841D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A1001E9-DC9A-4B2D-B8A0-2F2125D4841D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A1001E9-DC9A-4B2D-B8A0-2F2125D4841D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A1001E9-DC9A-4B2D-B8A0-2F2125D4841D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9EAF4A2-63E1-427D-9037-21827C49F810}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9EAF4A2-63E1-427D-9037-21827C49F810}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9EAF4A2-63E1-427D-9037-21827C49F810}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9EAF4A2-63E1-427D-9037-21827C49F810}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B8F17F0-C11B-457C-98C5-3C69E3F218FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B8F17F0-C11B-457C-98C5-3C69E3F218FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B8F17F0-C11B-457C-98C5-3C69E3F218FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B8F17F0-C11B-457C-98C5-3C69E3F218FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68800C8A-4C22-46FE-880E-719541E04AEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68800C8A-4C22-46FE-880E-719541E04AEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68800C8A-4C22-46FE-880E-719541E04AEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68800C8A-4C22-46FE-880E-719541E04AEC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
