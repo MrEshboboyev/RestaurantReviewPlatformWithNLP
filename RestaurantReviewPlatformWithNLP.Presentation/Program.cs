@@ -1,11 +1,26 @@
+using RestaurantReviewPlatformWithNLP.Infrastructure.Configurations;
+using RestaurantReviewPlatformWithNLP.Infrastructure.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerConfiguration();
+
+// configure database
+builder.Services.AddDatabaseConfiguration(builder.Configuration);
+
+// configure identity
+builder.Services.AddIdentityConfiguration();
+
+// configure JWT Authentication 
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// configure lifetime for services
+builder.Services.AddApplicationServices(builder.Configuration);
+
 
 var app = builder.Build();
 
@@ -21,5 +36,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.SeedDatabase();
 
 app.Run();
