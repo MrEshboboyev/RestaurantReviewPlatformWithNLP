@@ -13,6 +13,38 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
 
+        public async Task<ResponseDTO<IEnumerable<LeaderboardWithRestaurantDTO>>> GetRanksWithRestaurantNameAsync()
+        {
+            try
+            {
+                // Fetch all leaderboards, including the associated restaurant
+                var leaderboards = await _unitOfWork.Leaderboard.GetAllAsync(includeProperties: "Restaurant");
+
+                if (!leaderboards.Any())
+                {
+                    return new ResponseDTO<IEnumerable<LeaderboardWithRestaurantDTO>>(null, "No leaderboards found!");
+                }
+
+                // Order leaderboards by score in descending order and assign ranks
+                var orderedLeaderboards = leaderboards
+                    .OrderByDescending(l => l.Score)
+                    .Select((leaderboard, index) => new LeaderboardWithRestaurantDTO
+                    {
+                        Rank = index + 1, // Rank starts at 1
+                        RestaurantName = leaderboard.Restaurant.Name,
+                        Score = leaderboard.Score,
+                        LastUpdated = leaderboard.LastUpdated
+                    })
+                    .ToList();
+
+                return new ResponseDTO<IEnumerable<LeaderboardWithRestaurantDTO>>(orderedLeaderboards);
+            }
+            catch (Exception ex)
+            {
+                return new ResponseDTO<IEnumerable<LeaderboardWithRestaurantDTO>>(ex.Message);
+            }
+        }
+
         public async Task<ResponseDTO<List<LeaderboardDTO>>> GetTopRestaurantsAsync(int topCount)
         {
             try

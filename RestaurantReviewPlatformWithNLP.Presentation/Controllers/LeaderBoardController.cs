@@ -10,6 +10,17 @@ namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
     {
         private readonly ILeaderboardService _leaderboardService = leaderboardService;
 
+        [HttpGet("get-ranks-with-restaurant-name")]
+        public async Task<IActionResult> GetRanksWithRestaurantName()
+        {
+            var result = await _leaderboardService.GetRanksWithRestaurantNameAsync();
+
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            return Ok(result);
+        }
+
         [HttpGet("get-top-restaurants")]
         public async Task<IActionResult> GetTopRestaurants(int count)
         {
@@ -32,7 +43,7 @@ namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
             return Ok(result);
         }
 
-        [HttpGet("update-leaderboards")]
+        [HttpPut("update-leaderboards")]
         public async Task<IActionResult> UpdateLeaderboards()
         {
             var result = await _leaderboardService.UpdateAllLeaderboardsAsync();
