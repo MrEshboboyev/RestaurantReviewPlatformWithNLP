@@ -17,6 +17,7 @@
 	  </PackageReference>
 	  <PackageReference Include="Microsoft.OpenApi" Version="1.6.21" />
 	  <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+	  <PackageReference Include="StackExchange.Redis" Version="2.8.16" />
 	  <PackageReference Include="Stripe.net" Version="45.13.0" />
 	  <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.3" />
 	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2" />
