@@ -34,6 +34,12 @@ namespace RestaurantReviewPlatformWithNLP.Application.Mappings
             CreateMap<ReviewUpdateDTO, Review>();
 
             #endregion
+
+            #region Leaderboard
+
+            // Leaderboard -> LeaderboardDTO
+            CreateMap<Leaderboard, LeaderboardDTO>();
+            #endregion
         }
     }
 }
