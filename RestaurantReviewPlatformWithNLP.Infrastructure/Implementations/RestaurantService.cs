@@ -89,6 +89,19 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                 await _unitOfWork.Restaurant.AddAsync(restaurantForDb);
                 await _unitOfWork.SaveAsync();
 
+                // create leaderboard this new restaurant
+                Leaderboard leaderboardForDb = new()
+                {
+                    LastUpdated = DateTime.UtcNow,
+                    Rank = 0,
+                    Score = 0,
+                    RestaurantId = restaurantForDb.Id
+                };
+
+                // adding leaderboard to db and save
+                await _unitOfWork.Leaderboard.AddAsync(leaderboardForDb);
+                await _unitOfWork.SaveAsync();
+
                 return new ResponseDTO<RestaurantDTO>(_mapper.Map<RestaurantDTO>(restaurantForDb));
             }
             catch (Exception ex)
@@ -110,6 +123,19 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 
                 // update and save
                 await _unitOfWork.Restaurant.UpdateAsync(restaurantFromDb);
+                await _unitOfWork.SaveAsync();
+
+                // update the leaderboard
+                var leaderboardFromDb = await _unitOfWork.Leaderboard.GetAsync(
+                    l => l.RestaurantId.Equals(restaurantId)) 
+                    ?? throw new Exception("Leaderboard not found!");
+
+                leaderboardFromDb.LastUpdated = DateTime.UtcNow;
+                leaderboardFromDb.Score = restaurantFromDb.Reviews.Any()
+                    ? restaurantFromDb.Reviews.Average(r => r.Rating)
+                    : 0; // Recalculate score (average rating)
+
+                await _unitOfWork.Leaderboard.UpdateAsync(leaderboardFromDb);
                 await _unitOfWork.SaveAsync();
 
                 return new ResponseDTO<RestaurantDTO>(_mapper.Map<RestaurantDTO>(restaurantFromDb));
