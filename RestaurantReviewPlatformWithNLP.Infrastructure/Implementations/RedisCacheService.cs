@@ -4,15 +4,10 @@ using StackExchange.Redis;
 
 namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 {
-    public class RedisCacheService : IRedisCacheService
+    public class RedisCacheService(IConnectionMultiplexer redis) : IRedisCacheService
     {
-        private readonly IDatabase _database;
+        private readonly IDatabase _database = redis.GetDatabase();
         private const string LeaderboardKey = "restaurant_leaderboard";
-
-        public RedisCacheService(IConnectionMultiplexer redis)
-        {
-            _database = redis.GetDatabase();
-        }
 
         // Adds or updates the score for a restaurant
         public async Task<ResponseDTO<bool>> SetLeaderboardScoreAsync(Guid restaurantId, decimal score)

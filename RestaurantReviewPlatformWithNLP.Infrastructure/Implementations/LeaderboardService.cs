@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore;
 using RestaurantReviewPlatformWithNLP.Application.Common.Interfaces;
 using RestaurantReviewPlatformWithNLP.Application.DTOs;
 using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
@@ -8,29 +8,48 @@ using RestaurantReviewPlatformWithNLP.Domain.Entities;
 namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 {
     public class LeaderboardService(IUnitOfWork unitOfWork,
-        IMapper mapper) : ILeaderboardService
+        IMapper mapper,
+        IRedisCacheService redisCacheService) : ILeaderboardService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
+        private readonly IRedisCacheService _redisCacheService = redisCacheService;
 
         public async Task<ResponseDTO<IEnumerable<LeaderboardWithRestaurantDTO>>> GetRanksWithRestaurantNameAsync()
         {
             try
             {
-                // Fetch all leaderboards, including the associated restaurant
-                var leaderboards = await _unitOfWork.Leaderboard.GetAllAsync(includeProperties: "Restaurant");
+                // Try to get the leaderboard from Redis
+                var leaderboardFromRedis = await _redisCacheService.GetAllLeaderboardsAsync();
 
-                if (!leaderboards.Any())
+                if (leaderboardFromRedis != null && leaderboardFromRedis.Any())
+                {
+                    var leaderboardDtos = leaderboardFromRedis
+                        .Select((entry, index) => new LeaderboardWithRestaurantDTO
+                        {
+                            Rank = index + 1,
+                            RestaurantName = entry.RestaurantName,
+                            Score = entry.Score,
+                            LastUpdated = entry.LastUpdated
+                        })
+                        .ToList();
+
+                    return new ResponseDTO<IEnumerable<LeaderboardWithRestaurantDTO>>(leaderboardDtos);
+                }
+
+                // Fallback to the database if Redis cache is empty
+                var leaderboardsFromDb = await _unitOfWork.Leaderboard.GetAllAsync(includeProperties: "Restaurant");
+
+                if (!leaderboardsFromDb.Any())
                 {
                     return new ResponseDTO<IEnumerable<LeaderboardWithRestaurantDTO>>(null, "No leaderboards found!");
                 }
 
-                // Order leaderboards by score in descending order and assign ranks
-                var orderedLeaderboards = leaderboards
+                var orderedLeaderboards = leaderboardsFromDb
                     .OrderByDescending(l => l.Score)
                     .Select((leaderboard, index) => new LeaderboardWithRestaurantDTO
                     {
-                        Rank = index + 1, // Rank starts at 1
+                        Rank = index + 1,
                         RestaurantName = leaderboard.Restaurant.Name,
                         Score = leaderboard.Score,
                         LastUpdated = leaderboard.LastUpdated
@@ -49,18 +68,23 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
         {
             try
             {
-                // getting all restaurants
-                var restaurantsFromDb = await _unitOfWork.Restaurant.GetAllAsync(
-                    includeProperties: "Leaderboard");
+                // Attempt to fetch top restaurants from Redis
+                var topRestaurantsFromRedis = await _redisCacheService.GetTopRestaurantsAsync(topCount);
 
-                // sorting and take count restaurant
-                var topRestaurants = restaurantsFromDb
-                    .OrderByDescending(r => r.Leaderboard.Rank)
+                if (topRestaurantsFromRedis != null && topRestaurantsFromRedis.Any())
+                {
+                    return new ResponseDTO<List<LeaderboardDTO>>(_mapper.Map<List<LeaderboardDTO>>(topRestaurantsFromRedis));
+                }
+
+                // Fallback to the database if Redis does not have the data
+                var restaurantsFromDb = await _unitOfWork.Restaurant.GetAllAsync(includeProperties: "Leaderboard");
+                var topRestaurantsFromDb = restaurantsFromDb
+                    .OrderByDescending(r => r.Leaderboard.Score)
                     .Take(topCount)
                     .ToList();
 
                 return new ResponseDTO<List<LeaderboardDTO>>(
-                    _mapper.Map<List<LeaderboardDTO>>(topRestaurants.Select(r => r.Leaderboard)));
+                    _mapper.Map<List<LeaderboardDTO>>(topRestaurantsFromDb.Select(r => r.Leaderboard)));
             }
             catch (Exception ex)
             {
@@ -72,14 +96,21 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
         {
             try
             {
-                // get leaderboard
+                // Try fetching leaderboard from Redis
+                var leaderboardFromRedis = await _redisCacheService.GetLeaderboardByRestaurantAsync(restaurantId);
+
+                if (leaderboardFromRedis != null)
+                {
+                    return new ResponseDTO<LeaderboardDTO>(_mapper.Map<LeaderboardDTO>(leaderboardFromRedis));
+                }
+
+                // Fallback to the database
                 var leaderboardFromDb = await _unitOfWork.Leaderboard.GetAsync(
                     filter: l => l.RestaurantId.Equals(restaurantId),
                     includeProperties: "Restaurant")
                     ?? throw new Exception("Leaderboard not found!");
 
-                return new ResponseDTO<LeaderboardDTO>(
-                    _mapper.Map<LeaderboardDTO>(leaderboardFromDb));
+                return new ResponseDTO<LeaderboardDTO>(_mapper.Map<LeaderboardDTO>(leaderboardFromDb));
             }
             catch (Exception ex)
             {
@@ -91,39 +122,22 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
         {
             try
             {
-                // Fetch all restaurants along with their reviews
-                var restaurants = await _unitOfWork.Restaurant.GetAllAsync(
-                    includeProperties: "Reviews");
+                var restaurants = await _unitOfWork.Restaurant.GetAllAsync(includeProperties: "Reviews");
 
-                if (restaurants == null || !restaurants.Any())
+                if (!restaurants.Any())
                     throw new Exception("No restaurants found!");
 
-                // Iterate over each restaurant and update their leaderboard
                 foreach (var restaurant in restaurants)
                 {
-                    // Calculate the average rating and sentiment score for each restaurant
-                    decimal averageRating = restaurant.Reviews.Any()
-                        ? restaurant.Reviews.Average(r => r.Rating)
-                        : 0;
-
-                    float averageSentimentScore = restaurant.Reviews.Any()
-                        ? restaurant.Reviews.Average(r => r.SentimentScore)
-                        : 0;
-
-                    // Calculate the combined score using a formula
+                    decimal averageRating = restaurant.Reviews.Any() ? restaurant.Reviews.Average(r => r.Rating) : 0;
+                    float averageSentimentScore = restaurant.Reviews.Any() ? restaurant.Reviews.Average(r => r.SentimentScore) : 0;
                     decimal combinedScore = CalculateCombinedScore(averageRating, averageSentimentScore);
-
-                    // Use the method to calculate the rank of the restaurant
                     int rank = await CalculateRankAsync(restaurant.Id);
 
-                    // Fetch the leaderboard for the restaurant
-                    var leaderboardFromDb = await _unitOfWork.Leaderboard.GetAsync(
-                        filter: l => l.RestaurantId.Equals(restaurant.Id));
-
-                    if (leaderboardFromDb == null)
+                    var leaderboard = await _unitOfWork.Leaderboard.GetAsync(l => l.RestaurantId == restaurant.Id);
+                    if (leaderboard == null)
                     {
-                        // If no leaderboard exists, create a new one
-                        leaderboardFromDb = new Leaderboard
+                        leaderboard = new Leaderboard
                         {
                             Id = Guid.NewGuid(),
                             RestaurantId = restaurant.Id,
@@ -132,20 +146,21 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                             LastUpdated = DateTime.UtcNow
                         };
 
-                        await _unitOfWork.Leaderboard.AddAsync(leaderboardFromDb);
+                        await _unitOfWork.Leaderboard.AddAsync(leaderboard);
                     }
                     else
                     {
-                        // If leaderboard exists, update it
-                        leaderboardFromDb.Score = combinedScore;
-                        leaderboardFromDb.Rank = rank;
-                        leaderboardFromDb.LastUpdated = DateTime.UtcNow;
+                        leaderboard.Score = combinedScore;
+                        leaderboard.Rank = rank;
+                        leaderboard.LastUpdated = DateTime.UtcNow;
 
-                        await _unitOfWork.Leaderboard.UpdateAsync(leaderboardFromDb);
+                        await _unitOfWork.Leaderboard.UpdateAsync(leaderboard);
                     }
+
+                    // Update Redis with the new leaderboard data
+                    await _redisCacheService.UpdateLeaderboardAsync(restaurant.Id, combinedScore, rank);
                 }
 
-                // Save all changes to the database
                 await _unitOfWork.SaveAsync();
 
                 return new ResponseDTO<bool>(true, "All leaderboards updated successfully!");
@@ -157,6 +172,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
         }
 
         #region Private methods
+
         private decimal CalculateCombinedScore(decimal rating, float sentimentScore)
         {
             // Formula to calculate the combined score, giving equal weight to both rating and sentiment score
@@ -164,23 +180,18 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
             return (decimal)(rating * 0.5M + (decimal)sentimentScore * 0.5M);
         }
 
-
         private async Task<int> CalculateRankAsync(Guid restaurantId)
         {
-            // Fetch all leaderboards from the database
-            var allLeaderboards = await _unitOfWork.Leaderboard.GetAllAsync(
-                includeProperties: "Restaurant.Reviews");
+            var allLeaderboards = await _unitOfWork.Leaderboard.GetAllAsync(includeProperties: "Restaurant.Reviews");
 
-            // Order the leaderboards by the combined score in descending order
             var orderedLeaderboards = allLeaderboards
-                .OrderByDescending(l => CalculateCombinedScore(l.Score, l.Restaurant.Reviews.Average(r => r.SentimentScore)))
+                .OrderByDescending(l => CalculateCombinedScore(l.Restaurant.Reviews.Average(r => r.Rating), l.Restaurant.Reviews.Average(r => r.SentimentScore)))
                 .ToList();
 
-            // Find the rank of the given restaurant
             int rank = orderedLeaderboards
                 .Select((leaderboard, index) => new { leaderboard, index })
                 .Where(l => l.leaderboard.RestaurantId == restaurantId)
-                .Select(l => l.index + 1) // Ranks start at 1
+                .Select(l => l.index + 1)
                 .FirstOrDefault();
 
             return rank;
