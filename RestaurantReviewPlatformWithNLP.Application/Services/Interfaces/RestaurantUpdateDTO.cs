@@ -1,4 +1,4 @@
-﻿namespace RestaurantReviewPlatformWithNLP.Application.Services
+﻿namespace RestaurantReviewPlatformWithNLP.Application.Services.Interfaces
 {
     public class RestaurantUpdateDTO
     {

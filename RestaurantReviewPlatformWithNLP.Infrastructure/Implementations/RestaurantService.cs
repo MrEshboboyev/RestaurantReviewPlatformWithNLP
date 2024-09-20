@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using RestaurantReviewPlatformWithNLP.Application.Common.Interfaces;
 using RestaurantReviewPlatformWithNLP.Application.DTOs;
-using RestaurantReviewPlatformWithNLP.Application.Services;
+using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
 using RestaurantReviewPlatformWithNLP.Domain.Entities;
 
 namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations

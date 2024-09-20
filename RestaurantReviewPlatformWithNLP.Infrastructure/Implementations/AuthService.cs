@@ -4,7 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using RestaurantReviewPlatformWithNLP.Application.Common.Models;
 using RestaurantReviewPlatformWithNLP.Application.Common.Utility;
 using RestaurantReviewPlatformWithNLP.Application.DTOs;
-using RestaurantReviewPlatformWithNLP.Application.Services;
+using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
 using RestaurantReviewPlatformWithNLP.Domain.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

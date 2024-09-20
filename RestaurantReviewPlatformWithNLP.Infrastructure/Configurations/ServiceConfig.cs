@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RestaurantReviewPlatformWithNLP.Application.Common.Interfaces;
-using RestaurantReviewPlatformWithNLP.Application.Services;
+using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
 using RestaurantReviewPlatformWithNLP.Infrastructure.Data;
 using RestaurantReviewPlatformWithNLP.Infrastructure.Implementations;
 

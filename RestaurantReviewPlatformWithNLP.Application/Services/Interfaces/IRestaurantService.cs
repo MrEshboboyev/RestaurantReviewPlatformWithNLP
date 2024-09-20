@@ -1,7 +1,7 @@
 ﻿using RestaurantReviewPlatformWithNLP.Application.DTOs;
 using System.ComponentModel;
 
-namespace RestaurantReviewPlatformWithNLP.Application.Services
+namespace RestaurantReviewPlatformWithNLP.Application.Services.Interfaces
 {
     public interface IRestaurantService
     {

@@ -2,7 +2,7 @@
 using RestaurantReviewPlatformWithNLP.Application.DTOs;
 using RestaurantReviewPlatformWithNLP.Domain.Entities;
 
-namespace RestaurantReviewPlatformWithNLP.Application.Services
+namespace RestaurantReviewPlatformWithNLP.Application.Services.Interfaces
 {
     public interface IAuthService
     {

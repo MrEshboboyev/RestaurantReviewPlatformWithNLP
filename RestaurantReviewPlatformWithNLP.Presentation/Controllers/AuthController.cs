@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RestaurantReviewPlatformWithNLP.Application.Common.Models;
-using RestaurantReviewPlatformWithNLP.Application.Services;
+using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
 
 namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
 {
