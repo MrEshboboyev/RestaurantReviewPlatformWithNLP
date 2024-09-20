@@ -57,7 +57,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
             {
                 // get review for restaurant
                 var reviewFromDb = await _unitOfWork.Review.GetAsync(
-                    r => r.Id.Equals(reviewId)
+                    r => r.Id.Equals(reviewId) && r.UserId.Equals(reviewUpdateDTO.UserId)
                     ) ?? throw new Exception("Review not found!");
 
                 // mapping review
@@ -76,13 +76,14 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
             }
         }
 
-        public async Task<ResponseDTO<bool>> DeleteReviewAsync(Guid reviewId)
+        public async Task<ResponseDTO<bool>> DeleteReviewAsync(ReviewDeleteDTO reviewDeleteDTO)
         {
             try
             {
                 // get review for restaurant
                 var reviewFromDb = await _unitOfWork.Review.GetAsync(
-                    r => r.Id.Equals(reviewId)
+                    r => r.Id.Equals(reviewDeleteDTO.ReviewId) && 
+                    r.UserId.Equals(reviewDeleteDTO.UserId)
                     ) ?? throw new Exception("Review not found!");
 
                 // remove review and save

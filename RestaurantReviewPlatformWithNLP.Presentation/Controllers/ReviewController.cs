@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using RestaurantReviewPlatformWithNLP.Application.Common.Models;
 using RestaurantReviewPlatformWithNLP.Application.DTOs;
 using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
-using System.Reflection.Metadata.Ecma335;
 using System.Security.Claims;
 
 namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
@@ -52,7 +51,7 @@ namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
             return Ok(result);
         }
 
-        [HttpGet("update-review")]
+        [HttpPut("update-review")]
         public async Task<IActionResult> UpdateReview(Guid reviewId, [FromBody] UpdateReviewModel updateReviewModel)
         {
             // prepare dto
@@ -60,7 +59,6 @@ namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
             {
                 UserId = GetUserId(),
                 Rating = updateReviewModel.Rating,
-                RestaurantId = updateReviewModel.RestaurantId,
                 ReviewText = updateReviewModel.ReviewText
             };
 
@@ -72,10 +70,17 @@ namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
             return Ok(result);
         }
 
-        [HttpGet("delete-review")]
+        [HttpDelete("delete-review")]
         public async Task<IActionResult> DeleteReview(Guid reviewId)
         {
-            var result = await _reviewService.DeleteReviewAsync(reviewId);
+            // prepare DTO
+            ReviewDeleteDTO reviewDeleteDTO = new()
+            {
+                ReviewId = reviewId,
+                UserId = GetUserId()
+            };
+
+            var result = await _reviewService.DeleteReviewAsync(reviewDeleteDTO);
 
             if (!result.Success)
                 return BadRequest(result.Message);
