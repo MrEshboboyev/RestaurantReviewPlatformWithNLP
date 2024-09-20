@@ -35,6 +35,10 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
         {
             try
             {
+                // checking restaurant is available
+                var restaurantFromDb = await _unitOfWork.Restaurant.GetAsync(r => r.Id.Equals(reviewCreateDTO.RestaurantId))
+                    ?? throw new Exception("Restaurant not found!");
+
                 // mapping review
                 var reviewForDb = _mapper.Map<Review>(reviewCreateDTO);
 
