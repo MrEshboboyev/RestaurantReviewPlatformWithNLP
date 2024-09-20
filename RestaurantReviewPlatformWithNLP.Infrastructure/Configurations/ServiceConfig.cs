@@ -4,6 +4,7 @@ using RestaurantReviewPlatformWithNLP.Application.Common.Interfaces;
 using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
 using RestaurantReviewPlatformWithNLP.Infrastructure.Data;
 using RestaurantReviewPlatformWithNLP.Infrastructure.Implementations;
+using RestaurantReviewPlatformWithNLP.Infrastructure.Repositories;
 
 namespace RestaurantReviewPlatformWithNLP.Infrastructure.Configurations
 {
@@ -14,6 +15,10 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Configurations
             // adding lifetimes
             services.AddScoped<IDbInitializer, DbInitializer>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<ILeaderboardService, LeaderboardService>();
+            services.AddScoped<IRestaurantService, RestaurantService>();
+            services.AddScoped<IReviewService, ReviewService>();
 
             return services;
         }
