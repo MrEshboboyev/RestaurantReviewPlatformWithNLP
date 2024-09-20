@@ -7,6 +7,7 @@
         public string UserId { get; set; }
         public string ReviewText { get; set; }
         public decimal Rating { get; set; }
+        public float SentimentScore { get; set; }
         public DateTime CreatedAt { get; set; }
 
         // Navigation Property
