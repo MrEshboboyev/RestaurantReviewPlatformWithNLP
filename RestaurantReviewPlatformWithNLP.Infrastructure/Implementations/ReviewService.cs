@@ -7,11 +7,11 @@ using RestaurantReviewPlatformWithNLP.Domain.Entities;
 namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 {
     public class ReviewService(IUnitOfWork unitOfWork, 
-        IMapper mapper) : IReviewService
+        IMapper mapper, INLPService nlpService) : IReviewService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
-
+        private readonly INLPService _nlpService = nlpService;
         
         public async Task<ResponseDTO<List<ReviewDTO>>> GetReviewsByRestaurantAsync(Guid restaurantId)
         {
@@ -41,6 +41,9 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 
                 // mapping review
                 var reviewForDb = _mapper.Map<Review>(reviewCreateDTO);
+
+                // assign sentiment score
+                reviewForDb.SentimentScore = await _nlpService.AnalyzeSentimentAsync(reviewForDb.ReviewText);
 
                 // create review and save
                 await _unitOfWork.Review.AddAsync(reviewForDb);

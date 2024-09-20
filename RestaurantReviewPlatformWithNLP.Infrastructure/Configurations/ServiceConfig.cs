@@ -19,6 +19,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Configurations
             services.AddScoped<ILeaderboardService, LeaderboardService>();
             services.AddScoped<IRestaurantService, RestaurantService>();
             services.AddScoped<IReviewService, ReviewService>();
+            services.AddScoped<INLPService, GoogleCloudNLPService>();
 
             return services;
         }
