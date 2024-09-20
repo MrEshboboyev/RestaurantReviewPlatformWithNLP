@@ -1,13 +1,16 @@
-﻿using RestaurantReviewPlatformWithNLP.Application.Common.Interfaces;
+﻿using AutoMapper;
+using RestaurantReviewPlatformWithNLP.Application.Common.Interfaces;
 using RestaurantReviewPlatformWithNLP.Application.DTOs;
 using RestaurantReviewPlatformWithNLP.Application.Services;
 using RestaurantReviewPlatformWithNLP.Domain.Entities;
 
 namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 {
-    public class RestaurantService(IUnitOfWork unitOfWork) : IRestaurantService
+    public class RestaurantService(IUnitOfWork unitOfWork, 
+        IMapper mapper) : IRestaurantService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IMapper _mapper = mapper;
 
         public async Task<ResponseDTO<IEnumerable<RestaurantDTO>>> GetAllRestaurantsAsync()
         {
