@@ -1,3 +1,4 @@
+using RestaurantReviewPlatformWithNLP.Application.Mappings;
 using RestaurantReviewPlatformWithNLP.Infrastructure.Configurations;
 using RestaurantReviewPlatformWithNLP.Infrastructure.Services;
 
@@ -21,6 +22,8 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 // configure lifetime for services
 builder.Services.AddApplicationServices(builder.Configuration);
 
+// configure AutoMapper
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 var app = builder.Build();
 
