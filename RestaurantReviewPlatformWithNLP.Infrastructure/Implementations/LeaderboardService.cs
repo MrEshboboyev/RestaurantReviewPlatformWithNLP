@@ -101,12 +101,19 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                 // Iterate over each restaurant and update their leaderboard
                 foreach (var restaurant in restaurants)
                 {
-                    // Calculate the average rating for each restaurant
+                    // Calculate the average rating and sentiment score for each restaurant
                     decimal averageRating = restaurant.Reviews.Any()
                         ? restaurant.Reviews.Average(r => r.Rating)
-                        : 0; // If no reviews, average rating is 0
+                        : 0;
 
-                    // Use the private method to calculate the rank of the restaurant
+                    float averageSentimentScore = restaurant.Reviews.Any()
+                        ? restaurant.Reviews.Average(r => r.SentimentScore)
+                        : 0;
+
+                    // Calculate the combined score using a formula
+                    decimal combinedScore = CalculateCombinedScore(averageRating, averageSentimentScore);
+
+                    // Use the method to calculate the rank of the restaurant
                     int rank = await CalculateRankAsync(restaurant.Id);
 
                     // Fetch the leaderboard for the restaurant
@@ -120,7 +127,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                         {
                             Id = Guid.NewGuid(),
                             RestaurantId = restaurant.Id,
-                            Score = averageRating,
+                            Score = combinedScore,
                             Rank = rank,
                             LastUpdated = DateTime.UtcNow
                         };
@@ -130,7 +137,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                     else
                     {
                         // If leaderboard exists, update it
-                        leaderboardFromDb.Score = averageRating;
+                        leaderboardFromDb.Score = combinedScore;
                         leaderboardFromDb.Rank = rank;
                         leaderboardFromDb.LastUpdated = DateTime.UtcNow;
 
@@ -150,14 +157,23 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
         }
 
         #region Private methods
+        private decimal CalculateCombinedScore(decimal rating, float sentimentScore)
+        {
+            // Formula to calculate the combined score, giving equal weight to both rating and sentiment score
+            // You can adjust the weights if one factor is more important than the other
+            return (decimal)(rating * 0.5M + (decimal)sentimentScore * 0.5M);
+        }
+
+
         private async Task<int> CalculateRankAsync(Guid restaurantId)
         {
             // Fetch all leaderboards from the database
-            var allLeaderboards = await _unitOfWork.Leaderboard.GetAllAsync();
+            var allLeaderboards = await _unitOfWork.Leaderboard.GetAllAsync(
+                includeProperties: "Restaurant.Reviews");
 
-            // Order the leaderboards by Score in descending order and calculate the rank
+            // Order the leaderboards by the combined score in descending order
             var orderedLeaderboards = allLeaderboards
-                .OrderByDescending(l => l.Score)
+                .OrderByDescending(l => CalculateCombinedScore(l.Score, l.Restaurant.Reviews.Average(r => r.SentimentScore)))
                 .ToList();
 
             // Find the rank of the given restaurant
@@ -169,7 +185,6 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 
             return rank;
         }
-
 
         #endregion
     }
