@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using RestaurantReviewPlatformWithNLP.Application.Common.Interfaces;
 using RestaurantReviewPlatformWithNLP.Application.DTOs;
 using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
+using RestaurantReviewPlatformWithNLP.Domain.Entities;
 
 namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 {
@@ -54,39 +55,61 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
             }
         }
 
-        public async Task<ResponseDTO<bool>> UpdateLeaderboardAsync(Guid restaurantId)
+        public async Task<ResponseDTO<bool>> UpdateAllLeaderboardsAsync()
         {
             try
             {
-                // Fetch the current restaurant and its reviews
-                var restaurant = await _unitOfWork.Restaurant.GetAsync(
-                    filter: r => r.Id.Equals(restaurantId),
-                    includeProperties: "Reviews")
-                    ?? throw new Exception("Restaurant not found!");
+                // Fetch all restaurants along with their reviews
+                var restaurants = await _unitOfWork.Restaurant.GetAllAsync(
+                    includeProperties: "Reviews");
 
-                // Calculate the average rating for the restaurant
-                decimal averageRating = restaurant.Reviews.Any()
-                    ? restaurant.Reviews.Average(r => r.Rating)
-                    : 0; // If no reviews, average rating is 0
+                if (restaurants == null || !restaurants.Any())
+                    throw new Exception("No restaurants found!");
 
-                // Use the private method to get the rank of the restaurant based on the average rating
-                int rank = await CalculateRankAsync(restaurantId);
+                // Iterate over each restaurant and update their leaderboard
+                foreach (var restaurant in restaurants)
+                {
+                    // Calculate the average rating for each restaurant
+                    decimal averageRating = restaurant.Reviews.Any()
+                        ? restaurant.Reviews.Average(r => r.Rating)
+                        : 0; // If no reviews, average rating is 0
 
-                // Get the leaderboard entry for the restaurant
-                var leaderboardFromDb = await _unitOfWork.Leaderboard.GetAsync(
-                    filter: l => l.RestaurantId.Equals(restaurantId))
-                    ?? throw new Exception("Leaderboard not found!");
+                    // Use the private method to calculate the rank of the restaurant
+                    int rank = await CalculateRankAsync(restaurant.Id);
 
-                // Update leaderboard
-                leaderboardFromDb.LastUpdated = DateTime.UtcNow;
-                leaderboardFromDb.Score = averageRating; // Save the average rating in leaderboard
-                leaderboardFromDb.Rank = rank; // Save the calculated rank
+                    // Fetch the leaderboard for the restaurant
+                    var leaderboardFromDb = await _unitOfWork.Leaderboard.GetAsync(
+                        filter: l => l.RestaurantId.Equals(restaurant.Id));
 
-                await _unitOfWork.Leaderboard.UpdateAsync(leaderboardFromDb);
-                // Save changes
+                    if (leaderboardFromDb == null)
+                    {
+                        // If no leaderboard exists, create a new one
+                        leaderboardFromDb = new Leaderboard
+                        {
+                            Id = Guid.NewGuid(),
+                            RestaurantId = restaurant.Id,
+                            Score = averageRating,
+                            Rank = rank,
+                            LastUpdated = DateTime.UtcNow
+                        };
+
+                        await _unitOfWork.Leaderboard.AddAsync(leaderboardFromDb);
+                    }
+                    else
+                    {
+                        // If leaderboard exists, update it
+                        leaderboardFromDb.Score = averageRating;
+                        leaderboardFromDb.Rank = rank;
+                        leaderboardFromDb.LastUpdated = DateTime.UtcNow;
+
+                        await _unitOfWork.Leaderboard.UpdateAsync(leaderboardFromDb);
+                    }
+                }
+
+                // Save all changes to the database
                 await _unitOfWork.SaveAsync();
 
-                return new ResponseDTO<bool>(true, "Leaderboard updated successfully!");
+                return new ResponseDTO<bool>(true, "All leaderboards updated successfully!");
             }
             catch (Exception ex)
             {
@@ -97,24 +120,25 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
         #region Private methods
         private async Task<int> CalculateRankAsync(Guid restaurantId)
         {
-            // Fetch all restaurants and their reviews to calculate ranking
-            var allRestaurants = await _unitOfWork.Restaurant.GetAllAsync(includeProperties: "Reviews");
+            // Fetch all leaderboards from the database
+            var allLeaderboards = await _unitOfWork.Leaderboard.GetAllAsync();
 
-            // Calculate the average rating for each restaurant and rank them
-            var restaurantRankings = allRestaurants
-                .Select(r => new
-                {
-                    RestaurantId = r.Id,
-                    AverageRating = r.Reviews.Any() ? r.Reviews.Average(rv => rv.Rating) : 0
-                })
-                .OrderByDescending(r => r.AverageRating) // Higher rating = better rank
+            // Order the leaderboards by Score in descending order and calculate the rank
+            var orderedLeaderboards = allLeaderboards
+                .OrderByDescending(l => l.Score)
                 .ToList();
 
-            // Find the rank of the current restaurant
-            int rank = restaurantRankings.FindIndex(r => r.RestaurantId == restaurantId) + 1; // Rank is 1-based
+            // Find the rank of the given restaurant
+            int rank = orderedLeaderboards
+                .Select((leaderboard, index) => new { leaderboard, index })
+                .Where(l => l.leaderboard.RestaurantId == restaurantId)
+                .Select(l => l.index + 1) // Ranks start at 1
+                .FirstOrDefault();
 
             return rank;
         }
+
+
         #endregion
     }
 }

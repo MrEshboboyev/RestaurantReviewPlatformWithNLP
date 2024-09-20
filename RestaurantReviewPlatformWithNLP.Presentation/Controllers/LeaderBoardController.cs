@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
-using System.Formats.Asn1;
 
 namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
 {
@@ -33,10 +32,10 @@ namespace RestaurantReviewPlatformWithNLP.Presentation.Controllers
             return Ok(result);
         }
 
-        [HttpGet("update-leaderboard")]
-        public async Task<IActionResult> UpdateLeaderboard(Guid restaurantId)
+        [HttpGet("update-leaderboards")]
+        public async Task<IActionResult> UpdateLeaderboards()
         {
-            var result = await _leaderboardService.UpdateLeaderboardAsync(restaurantId);
+            var result = await _leaderboardService.UpdateAllLeaderboardsAsync();
 
             if (!result.Success)
                 return BadRequest(result.Message);

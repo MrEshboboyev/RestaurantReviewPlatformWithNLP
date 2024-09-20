@@ -6,6 +6,6 @@ namespace RestaurantReviewPlatformWithNLP.Application.Services.Interfaces
     {
         Task<ResponseDTO<List<LeaderboardDTO>>> GetTopRestaurantsAsync(int topCount);
         Task<ResponseDTO<LeaderboardDTO>> GetLeaderboardByRestaurantAsync(Guid restaurantId);
-        Task<ResponseDTO<bool>> UpdateLeaderboardAsync(Guid restaurantId);
+        Task<ResponseDTO<bool>> UpdateAllLeaderboardsAsync();
     }
 }
