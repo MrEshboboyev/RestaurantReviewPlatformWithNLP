@@ -103,7 +103,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                     ?? throw new Exception("Restaurant not found!");
 
                 // mapping 
-                _mapper.Map(restaurantFromDb, restaurantFromDb);
+                _mapper.Map(restaurantUpdateDTO, restaurantFromDb);
 
                 // update and save
                 await _unitOfWork.Restaurant.UpdateAsync(restaurantFromDb);
