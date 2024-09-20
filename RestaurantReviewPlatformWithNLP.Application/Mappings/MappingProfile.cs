@@ -21,6 +21,19 @@ namespace RestaurantReviewPlatformWithNLP.Application.Mappings
             CreateMap<RestaurantUpdateDTO, Restaurant>();
 
             #endregion
+
+            #region Review
+
+            // Review -> ReviewDTO
+            CreateMap<Review, ReviewDTO>();
+
+            // ReviewCreateDTO -> Review
+            CreateMap<ReviewCreateDTO, Review>();
+
+            // ReviewUpdateDTO -> Review
+            CreateMap<ReviewUpdateDTO, Review>();
+
+            #endregion
         }
     }
 }
