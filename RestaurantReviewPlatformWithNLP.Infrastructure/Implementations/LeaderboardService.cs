@@ -27,7 +27,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                     .ToList();
 
                 return new ResponseDTO<List<LeaderboardDTO>>(
-                    _mapper.Map<List<LeaderboardDTO>>(topRestaurants));
+                    _mapper.Map<List<LeaderboardDTO>>(topRestaurants.Select(r => r.Leaderboard)));
             }
             catch (Exception ex)
             {
@@ -42,7 +42,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                 // get leaderboard
                 var leaderboardFromDb = await _unitOfWork.Leaderboard.GetAsync(
                     filter: l => l.RestaurantId.Equals(restaurantId),
-                    includeProperties: "Leaderboard")
+                    includeProperties: "Restaurant")
                     ?? throw new Exception("Leaderboard not found!");
 
                 return new ResponseDTO<LeaderboardDTO>(
@@ -82,6 +82,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                 leaderboardFromDb.Score = averageRating; // Save the average rating in leaderboard
                 leaderboardFromDb.Rank = rank; // Save the calculated rank
 
+                await _unitOfWork.Leaderboard.UpdateAsync(leaderboardFromDb);
                 // Save changes
                 await _unitOfWork.SaveAsync();
 
