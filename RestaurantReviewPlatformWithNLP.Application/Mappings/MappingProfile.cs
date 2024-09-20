@@ -28,7 +28,8 @@ namespace RestaurantReviewPlatformWithNLP.Application.Mappings
             CreateMap<Review, ReviewDTO>();
 
             // ReviewCreateDTO -> Review
-            CreateMap<ReviewCreateDTO, Review>();
+            CreateMap<ReviewCreateDTO, Review>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
 
             // ReviewUpdateDTO -> Review
             CreateMap<ReviewUpdateDTO, Review>();

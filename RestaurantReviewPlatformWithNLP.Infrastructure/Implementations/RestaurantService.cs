@@ -17,7 +17,8 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
             try
             {
                 // getting all restaurants
-                var restaurantsFromDb = await _unitOfWork.Restaurant.GetAllAsync();
+                var restaurantsFromDb = await _unitOfWork.Restaurant.GetAllAsync(
+                    includeProperties: "Reviews");
                 
                 // create restaurantDTOs list
                 var restaurantDTOs = new List<RestaurantDTO>();
@@ -52,7 +53,9 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
             try
             {
                 // getting restaurant
-                var restaurantFromDb = await _unitOfWork.Restaurant.GetAsync(r => r.Id.Equals(restaurantId))
+                var restaurantFromDb = await _unitOfWork.Restaurant.GetAsync(
+                    filter: r => r.Id.Equals(restaurantId),
+                    includeProperties: "Reviews")
                     ?? throw new Exception("Restaurant not found!");
 
                 // get restaurant reviews
