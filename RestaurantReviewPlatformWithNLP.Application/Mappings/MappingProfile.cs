@@ -39,7 +39,8 @@ namespace RestaurantReviewPlatformWithNLP.Application.Mappings
             #region Leaderboard
 
             // Leaderboard -> LeaderboardDTO
-            CreateMap<Leaderboard, LeaderboardDTO>();
+            CreateMap<Leaderboard, LeaderboardDTO>()
+                .ForMember(dest => dest.RestaurantName, opt => opt.MapFrom(src => src.Restaurant.Name));
             #endregion
         }
     }
