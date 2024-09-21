@@ -21,9 +21,6 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Configurations
             services.AddScoped<IReviewService, ReviewService>();
             services.AddScoped<INLPService, GoogleCloudNLPService>();
 
-            // configure redis service
-            services.AddSingleton(new RedisCacheService(configuration.GetSection("Redis")["ConnectionString"]));
-
             return services;
         }
     }

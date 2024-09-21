@@ -25,6 +25,9 @@ builder.Services.AddApplicationServices(builder.Configuration);
 // configure AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+// configure redis cache
+builder.Services.AddRedisCache(builder.Configuration);
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
