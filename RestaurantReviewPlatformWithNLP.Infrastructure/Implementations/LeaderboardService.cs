@@ -185,7 +185,16 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
             var allLeaderboards = await _unitOfWork.Leaderboard.GetAllAsync(includeProperties: "Restaurant.Reviews");
 
             var orderedLeaderboards = allLeaderboards
-                .OrderByDescending(l => CalculateCombinedScore(l.Restaurant.Reviews.Average(r => r.Rating), l.Restaurant.Reviews.Average(r => r.SentimentScore)))
+                .OrderByDescending(l =>
+                {
+                    var reviews = l.Restaurant.Reviews;
+
+                    // Check if there are reviews, if not, default to a score of 0 or some other logic
+                    decimal averageRating = reviews.Any() ? reviews.Average(r => r.Rating) : 0;
+                    float averageSentimentScore = reviews.Any() ? reviews.Average(r => r.SentimentScore) : 0;
+
+                    return CalculateCombinedScore(averageRating, averageSentimentScore);
+                })
                 .ToList();
 
             int rank = orderedLeaderboards
@@ -196,6 +205,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
 
             return rank;
         }
+
 
         #endregion
     }
