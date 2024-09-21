@@ -1,68 +1,78 @@
-﻿using RestaurantReviewPlatformWithNLP.Application.DTOs;
+﻿using StackExchange.Redis;
+using Newtonsoft.Json;
+using RestaurantReviewPlatformWithNLP.Application.DTOs;
 using RestaurantReviewPlatformWithNLP.Application.Services.Interfaces;
-using StackExchange.Redis;
 
-namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
+public class RedisCacheService : IRedisCacheService
 {
-    public class RedisCacheService(IConnectionMultiplexer redis) : IRedisCacheService
+    private readonly IConnectionMultiplexer _redis;
+    private readonly IDatabase _db;
+    private const string LeaderboardKey = "leaderboard";
+
+    public RedisCacheService(IConnectionMultiplexer redis)
     {
-        private readonly IDatabase _database = redis.GetDatabase();
-        private const string LeaderboardKey = "restaurant_leaderboard";
-
-        // Adds or updates the score for a restaurant
-        public async Task<ResponseDTO<bool>> SetLeaderboardScoreAsync(Guid restaurantId, decimal score)
-        {
-            try
-            {
-                bool result = await _database.SortedSetAddAsync(LeaderboardKey, restaurantId.ToString(), (double)score);
-                return new ResponseDTO<bool>(result);
-            }
-            catch (Exception ex)
-            {
-                return new ResponseDTO<bool>($"Failed to set leaderboard score: {ex.Message}");
-            }
-        }
-
-        // Retrieves the score of a restaurant
-        public async Task<ResponseDTO<double?>> GetLeaderboardScoreAsync(Guid restaurantId)
-        {
-            try
-            {
-                double? score = await _database.SortedSetScoreAsync(LeaderboardKey, restaurantId.ToString());
-                return new ResponseDTO<double?>(score);
-            }
-            catch (Exception ex)
-            {
-                return new ResponseDTO<double?>($"Failed to get leaderboard score: {ex.Message}");
-            }
-        }
-
-        // Gets the top restaurants based on their scores
-        public async Task<ResponseDTO<SortedSetEntry[]>> GetTopRestaurantsAsync(int count)
-        {
-            try
-            {
-                SortedSetEntry[] topRestaurants = await _database.SortedSetRangeByRankWithScoresAsync(LeaderboardKey, 0, count - 1, Order.Descending);
-                return new ResponseDTO<SortedSetEntry[]>(topRestaurants);
-            }
-            catch (Exception ex)
-            {
-                return new ResponseDTO<SortedSetEntry[]>($"Failed to get top restaurants: {ex.Message}");
-            }
-        }
-
-        // Removes a restaurant from the leaderboard
-        public async Task<ResponseDTO<bool>> RemoveRestaurantFromLeaderboardAsync(Guid restaurantId)
-        {
-            try
-            {
-                bool result = await _database.SortedSetRemoveAsync(LeaderboardKey, restaurantId.ToString());
-                return new ResponseDTO<bool>(result);
-            }
-            catch (Exception ex)
-            {
-                return new ResponseDTO<bool>($"Failed to remove restaurant from leaderboard: {ex.Message}");
-            }
-        }
+        _redis = redis;
+        _db = _redis.GetDatabase();
     }
+
+    public async Task<IEnumerable<LeaderboardDTO>> GetAllLeaderboardsAsync()
+    {
+        var sortedLeaderboards = await _db.SortedSetRangeByRankAsync(LeaderboardKey, order: Order.Descending);
+
+        if (sortedLeaderboards.Length == 0)
+            return Enumerable.Empty<LeaderboardDTO>();
+
+        return sortedLeaderboards.Select(entry => JsonConvert.DeserializeObject<LeaderboardDTO>(entry));
+    }
+
+    public async Task<List<LeaderboardDTO>> GetTopRestaurantsAsync(int topCount)
+    {
+        var sortedLeaderboards = await _db.SortedSetRangeByRankAsync(LeaderboardKey, 0, topCount - 1, order: Order.Descending);
+
+        if (sortedLeaderboards.Length == 0)
+            return new List<LeaderboardDTO>();
+
+        return sortedLeaderboards.Select(entry => JsonConvert.DeserializeObject<LeaderboardDTO>(entry)).ToList();
+    }
+
+    public async Task<LeaderboardDTO> GetLeaderboardByRestaurantAsync(Guid restaurantId)
+    {
+        var leaderboard = await _db.SortedSetScoreAsync(LeaderboardKey, restaurantId.ToString());
+
+        if (leaderboard == null)
+            return null;
+
+        // Fetch the leaderboard by key and deserialize it
+        var leaderboardJson = await _db.StringGetAsync(GenerateLeaderboardKey(restaurantId));
+        return leaderboardJson.HasValue ? JsonConvert.DeserializeObject<LeaderboardDTO>(leaderboardJson) : null;
+    }
+
+    public async Task UpdateLeaderboardAsync(Guid restaurantId, decimal score, int rank)
+    {
+        // Store leaderboard in sorted set based on score
+        await _db.SortedSetAddAsync(LeaderboardKey, restaurantId.ToString(), (double)score);
+
+        // Create a LeaderboardDTO object and serialize it to store in Redis
+        var leaderboardDto = new LeaderboardDTO
+        {
+            RestaurantId = restaurantId,
+            Score = score,
+            Rank = rank,
+            LastUpdated = DateTime.UtcNow
+        };
+
+        var leaderboardJson = JsonConvert.SerializeObject(leaderboardDto);
+
+        // Store the leaderboard JSON as a key-value pair with the restaurant ID as the key
+        await _db.StringSetAsync(GenerateLeaderboardKey(restaurantId), leaderboardJson);
+    }
+
+    #region Private Helpers
+
+    private string GenerateLeaderboardKey(Guid restaurantId)
+    {
+        return $"{LeaderboardKey}:{restaurantId}";
+    }
+
+    #endregion
 }
