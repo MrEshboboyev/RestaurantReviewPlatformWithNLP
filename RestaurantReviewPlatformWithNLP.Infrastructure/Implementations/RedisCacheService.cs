@@ -22,7 +22,18 @@ public class RedisCacheService : IRedisCacheService
         if (sortedLeaderboards.Length == 0)
             return Enumerable.Empty<LeaderboardDTO>();
 
-        return sortedLeaderboards.Select(entry => JsonConvert.DeserializeObject<LeaderboardDTO>(entry));
+        // For each entry (which is a restaurantId), retrieve the corresponding leaderboard from the key-value store
+        var leaderboards = new List<LeaderboardDTO>();
+        foreach (var entry in sortedLeaderboards)
+        {
+            var leaderboardJson = await _db.StringGetAsync(GenerateLeaderboardKey(Guid.Parse(entry)));
+            if (leaderboardJson.HasValue)
+            {
+                leaderboards.Add(JsonConvert.DeserializeObject<LeaderboardDTO>(leaderboardJson));
+            }
+        }
+
+        return leaderboards;
     }
 
     public async Task<List<LeaderboardDTO>> GetTopRestaurantsAsync(int topCount)
@@ -32,8 +43,20 @@ public class RedisCacheService : IRedisCacheService
         if (sortedLeaderboards.Length == 0)
             return new List<LeaderboardDTO>();
 
-        return sortedLeaderboards.Select(entry => JsonConvert.DeserializeObject<LeaderboardDTO>(entry)).ToList();
+        // Retrieve leaderboard data for each restaurantId
+        var leaderboards = new List<LeaderboardDTO>();
+        foreach (var entry in sortedLeaderboards)
+        {
+            var leaderboardJson = await _db.StringGetAsync(GenerateLeaderboardKey(Guid.Parse(entry)));
+            if (leaderboardJson.HasValue)
+            {
+                leaderboards.Add(JsonConvert.DeserializeObject<LeaderboardDTO>(leaderboardJson));
+            }
+        }
+
+        return leaderboards;
     }
+
 
     public async Task<LeaderboardDTO> GetLeaderboardByRestaurantAsync(Guid restaurantId)
     {
