@@ -47,7 +47,7 @@ public class RedisCacheService : IRedisCacheService
         return leaderboardJson.HasValue ? JsonConvert.DeserializeObject<LeaderboardDTO>(leaderboardJson) : null;
     }
 
-    public async Task UpdateLeaderboardAsync(Guid restaurantId, decimal score, int rank)
+    public async Task UpdateLeaderboardAsync(Guid restaurantId, string restaurantName, decimal score, int rank)
     {
         // Store leaderboard in sorted set based on score
         await _db.SortedSetAddAsync(LeaderboardKey, restaurantId.ToString(), (double)score);
@@ -56,6 +56,7 @@ public class RedisCacheService : IRedisCacheService
         var leaderboardDto = new LeaderboardDTO
         {
             RestaurantId = restaurantId,
+            RestaurantName = restaurantName,
             Score = score,
             Rank = rank,
             LastUpdated = DateTime.UtcNow

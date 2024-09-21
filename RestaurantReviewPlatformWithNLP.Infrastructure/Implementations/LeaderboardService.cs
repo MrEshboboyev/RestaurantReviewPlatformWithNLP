@@ -158,7 +158,7 @@ namespace RestaurantReviewPlatformWithNLP.Infrastructure.Implementations
                     }
 
                     // Update Redis with the new leaderboard data
-                    await _redisCacheService.UpdateLeaderboardAsync(restaurant.Id, combinedScore, rank);
+                    await _redisCacheService.UpdateLeaderboardAsync(restaurant.Id, restaurant.Name, combinedScore, rank);
                 }
 
                 await _unitOfWork.SaveAsync();

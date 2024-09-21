@@ -7,6 +7,6 @@ namespace RestaurantReviewPlatformWithNLP.Application.Services.Interfaces
         Task<IEnumerable<LeaderboardDTO>> GetAllLeaderboardsAsync();
         Task<List<LeaderboardDTO>> GetTopRestaurantsAsync(int topCount);
         Task<LeaderboardDTO> GetLeaderboardByRestaurantAsync(Guid restaurantId);
-        Task UpdateLeaderboardAsync(Guid restaurantId, decimal score, int rank);
+        Task UpdateLeaderboardAsync(Guid restaurantId, string restaurantName, decimal score, int rank);
     }
 }
